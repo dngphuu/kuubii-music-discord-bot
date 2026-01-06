@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import play from 'play-dl';
-import { config } from '../../config.js';
+import { config } from '../../../config.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -55,16 +55,20 @@ export default {
                 if (play.is_expired()) await play.refreshToken();
                 const spData = await play.spotify(query);
                 if (type === 'sp_track') {
-                    const searched = await play.search(`${spData.name} ${spData.artists[0].name}`, { limit: 1 });
+                    const searched = await play.search(`${spData.name} ${spData.artists[0]?.name}`, { limit: 1 });
                     if (searched.length > 0) {
-                        tracksToAdd.push(this.formatTrack(searched[0], interaction.user));
+                        const track = this.formatTrack(searched[0], interaction.user);
+                        track.title = spData.name; // Keep Spotify title
+                        tracksToAdd.push(track);
                     }
                 } else {
                     const spTracks = await spData.all_tracks();
                     for (const t of spTracks) {
-                        const searched = await play.search(`${t.name} ${t.artists[0].name}`, { limit: 1 });
+                        const searched = await play.search(`${t.name} ${t.artists[0]?.name}`, { limit: 1 });
                         if (searched.length > 0) {
-                            tracksToAdd.push(this.formatTrack(searched[0], interaction.user));
+                            const track = this.formatTrack(searched[0], interaction.user);
+                            track.title = t.name; // Keep Spotify title
+                            tracksToAdd.push(track);
                         }
                     }
                     trackInfo = { title: spData.name, url: spData.url, count: spTracks.length };
@@ -76,7 +80,7 @@ export default {
                 } else {
                     const soTracks = await soData.all_tracks();
                     soTracks.forEach(t => tracksToAdd.push(this.formatTrack(t, interaction.user)));
-                    trackInfo = { title: soData.name, url: soData.url, count: soTracks.length };
+                    trackInfo = { title: soData.name || 'SoundCloud Playlist', url: query, count: soTracks.length };
                 }
             } else {
                 // Search fallback

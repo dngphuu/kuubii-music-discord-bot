@@ -6,7 +6,16 @@ export const config = {
     guildId: process.env.GUILD_ID,
     geniusApiKey: process.env.GENIUS_API_KEY,
     ownerId: process.env.OWNER_ID,
-    databasePath: process.env.DATABASE_PATH || './src/database/music.db',
+    database: {
+        url: process.env.DATABASE_URL
+    },
+    spotify: {
+        clientId: process.env.SPOTIFY_CLIENT_ID,
+        clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+    },
+    soundcloud: {
+        clientId: process.env.SOUNDCLOUD_CLIENT_ID
+    },
 
     // Embed Colors
     colors: {

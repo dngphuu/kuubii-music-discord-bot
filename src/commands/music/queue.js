@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import { config } from '../../config.js';
+import { config } from '../../../config.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -22,8 +22,8 @@ export default {
             .setTitle(`Phòng chờ nhạc - ${interaction.guild.name}`)
             .setColor(config.colors.primary)
             .setDescription(`**Đang phát:** [${currentTrack.title}](${currentTrack.url})\n\n**Tiếp theo:**\n${tracks.length > 0
-                    ? tracks.map((t, i) => `${i + 1}. [${t.title}](${t.url}) - \`${t.duration}\``).join('\n')
-                    : 'Trống'
+                ? tracks.map((t, i) => `${i + 1}. [${t.title}](${t.url}) - \`${t.duration}\``).join('\n')
+                : 'Trống'
                 }`)
             .setFooter({ text: `Tổng cộng: ${queue.tracks.length} bài hát • Lặp lại: ${queue.loop}` });
 

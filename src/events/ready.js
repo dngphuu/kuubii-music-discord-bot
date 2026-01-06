@@ -1,5 +1,5 @@
 import { Events, REST, Routes } from 'discord.js';
-import { config } from '../config.js';
+import { config } from '../../config.js';
 
 export default {
     name: Events.ClientReady,

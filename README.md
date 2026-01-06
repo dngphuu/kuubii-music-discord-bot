@@ -36,12 +36,17 @@ A high-performance, modern Discord Music Bot inspired by Beatra.app, tailored fo
    ```
 
 3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory (use the provided template):
+   Create a `.env` file in the root directory:
    ```env
    DISCORD_TOKEN=your_bot_token
    CLIENT_ID=your_client_id
    GUILD_ID=your_guild_id
    GENIUS_API_KEY=your_genius_key
+   DATABASE_HOST=5.161.72.213
+   DATABASE_PORT=3306
+   DATABASE_USER=u42439_XsGEVwuwJj
+   DATABASE_PASS=YwufNSLQnDy6q+2BdYfPt@=z
+   DATABASE_NAME=s42439_icer
    ```
 
 4. **Run the bot**:

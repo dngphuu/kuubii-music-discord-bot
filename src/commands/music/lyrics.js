@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { Client } from 'genius-lyrics';
-import { config } from '../../config.js';
+import { config } from '../../../config.js';
 
 const genius = new Client(config.geniusApiKey);
 

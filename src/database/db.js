@@ -1,36 +1,52 @@
-import Database from 'better-sqlite3';
-import { config } from '../config.js';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import mysql from 'mysql2/promise';
+import { config } from '../../config.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const dbUrl = config.database.url;
 
-// Ensure the database directory exists
-if (!fs.existsSync(__dirname)) {
-    fs.mkdirSync(__dirname, { recursive: true });
-}
+// Handle jdbc: prefix if present (common in some hosting environments)
+const connectionUri = dbUrl.startsWith('jdbc:') ? dbUrl.replace('jdbc:', '') : dbUrl;
 
-const db = new Database(config.databasePath);
+// Create the connection pool
+const pool = mysql.createPool({
+    uri: connectionUri,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
 
 // Initialize tables
-db.exec(`
-    CREATE TABLE IF NOT EXISTS server_settings (
-        guild_id TEXT PRIMARY KEY,
-        prefix TEXT DEFAULT '/',
-        language TEXT DEFAULT 'vi',
-        autoplay INTEGER DEFAULT 1,
-        mode_24_7 INTEGER DEFAULT 0,
-        volume INTEGER DEFAULT 50
-    );
+async function initializeDatabase() {
+    try {
+        const connection = await pool.getConnection();
 
-    CREATE TABLE IF NOT EXISTS playlists (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT,
-        name TEXT,
-        tracks TEXT, -- JSON string of track objects
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-`);
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS server_settings (
+                guild_id VARCHAR(255) PRIMARY KEY,
+                prefix VARCHAR(10) DEFAULT '/',
+                language VARCHAR(10) DEFAULT 'vi',
+                autoplay TINYINT(1) DEFAULT 1,
+                mode_24_7 TINYINT(1) DEFAULT 0,
+                volume INT DEFAULT 50
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
 
-export default db;
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS playlists (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_id VARCHAR(255),
+                name VARCHAR(255),
+                tracks TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        `);
+
+        connection.release();
+        console.log('Database initialized successfully.');
+    } catch (error) {
+        console.error('Database initialization error:', error);
+    }
+}
+
+initializeDatabase();
+
+export default pool;

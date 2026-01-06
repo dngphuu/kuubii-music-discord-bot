@@ -9,8 +9,11 @@ import {
 } from '@discordjs/voice';
 import play from 'play-dl';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { config } from '../config.js';
+import { config } from '../../config.js';
 import db from '../database/db.js';
+import prism from 'prism-media';
+import ffmpeg from 'ffmpeg-static';
+import { spawn } from 'child_process';
 
 class MusicQueue {
     constructor(guildId, client) {
@@ -21,6 +24,11 @@ class MusicQueue {
         this.loop = 'none'; // 'none', 'track', 'queue'
         this.autoplay = true;
         this.mode247 = false;
+        this.filters = {
+            bassboost: false,
+            nightcore: false,
+            vaporwave: false,
+        };
         this.volume = config.music.defaultVolume;
         this.textChannel = null;
         this.voiceChannel = null;
@@ -37,23 +45,32 @@ class MusicQueue {
         this.loadSettings();
     }
 
-    loadSettings() {
-        const stmt = db.prepare('SELECT * FROM server_settings WHERE guild_id = ?');
-        const settings = stmt.get(this.guildId);
-        if (settings) {
-            this.autoplay = !!settings.autoplay;
-            this.mode247 = !!settings.mode_24_7;
-            this.volume = settings.volume;
-        } else {
-            // Initialize default settings
-            const insert = db.prepare('INSERT INTO server_settings (guild_id) VALUES (?)');
-            insert.run(this.guildId);
+    async loadSettings() {
+        try {
+            const [rows] = await db.execute('SELECT * FROM server_settings WHERE guild_id = ?', [this.guildId]);
+            const settings = rows[0];
+            if (settings) {
+                this.autoplay = !!settings.autoplay;
+                this.mode247 = !!settings.mode_24_7;
+                this.volume = settings.volume;
+            } else {
+                // Initialize default settings
+                await db.execute('INSERT IGNORE INTO server_settings (guild_id) VALUES (?)', [this.guildId]);
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
         }
     }
 
-    saveSettings() {
-        const stmt = db.prepare('UPDATE server_settings SET autoplay = ?, mode_24_7 = ?, volume = ? WHERE guild_id = ?');
-        stmt.run(this.autoplay ? 1 : 0, this.mode247 ? 1 : 0, this.volume, this.guildId);
+    async saveSettings() {
+        try {
+            await db.execute(
+                'UPDATE server_settings SET autoplay = ?, mode_24_7 = ?, volume = ? WHERE guild_id = ?',
+                [this.autoplay ? 1 : 0, this.mode247 ? 1 : 0, this.volume, this.guildId]
+            );
+        } catch (error) {
+            console.error('Error saving settings:', error);
+        }
     }
 
     get currentTrack() {
@@ -76,8 +93,39 @@ class MusicQueue {
 
         try {
             const stream = await play.stream(track.url);
-            const resource = createAudioResource(stream.stream, {
-                inputType: stream.type,
+
+            // Build FFmpeg filters
+            let filterArgs = [];
+            if (this.filters.bassboost) filterArgs.push('bass=g=10,dynaudnorm=f=200');
+            if (this.filters.nightcore) filterArgs.push('atempo=1.06,asetrate=48000*1.25');
+            if (this.filters.vaporwave) filterArgs.push('atempo=1,asetrate=48000*0.8');
+
+            let finalStream;
+            if (filterArgs.length > 0) {
+                const ffmpegProcess = spawn(ffmpeg, [
+                    '-i', '-',
+                    '-af', filterArgs.join(','),
+                    '-f', 's16le',
+                    '-ar', '48000',
+                    '-ac', '2',
+                    '-'
+                ], { stdio: ['pipe', 'pipe', 'ignore'] });
+
+                stream.stream.pipe(ffmpegProcess.stdin);
+
+                finalStream = new prism.opus.Encoder({
+                    rate: 48000,
+                    channels: 2,
+                    frameSize: 960
+                });
+
+                ffmpegProcess.stdout.pipe(finalStream);
+            } else {
+                finalStream = stream.stream;
+            }
+
+            const resource = createAudioResource(finalStream, {
+                inputType: filterArgs.length > 0 ? 'opus' : stream.type,
                 inlineVolume: true
             });
             resource.volume.setVolume(this.volume / 100);
@@ -107,6 +155,15 @@ class MusicQueue {
             this.connection.destroy();
             this.connection = null;
         }
+    }
+
+    setVolume(volume) {
+        this.volume = volume;
+        if (this.player.state.status === AudioPlayerStatus.Playing) {
+            const resource = this.player.state.resource;
+            resource.volume?.setVolume(this.volume / 100);
+        }
+        this.saveSettings();
     }
 
     async onTrackEnd() {
@@ -223,6 +280,7 @@ class PlayerManager {
 
     async join(voiceChannel, textChannel) {
         const queue = this.getQueue(voiceChannel.guild.id);
+        await queue.loadSettings();
         queue.textChannel = textChannel;
         queue.voiceChannel = voiceChannel;
 

@@ -88,6 +88,7 @@ export default {
                 const cycles = ['none', 'track', 'queue'];
                 const currentIdx = cycles.indexOf(queue.loop);
                 queue.loop = cycles[(currentIdx + 1) % cycles.length];
+                await queue.saveSettings();
                 const loopNames = { none: 'Tắt', track: 'Bài hát', queue: 'Danh sách' };
                 await interaction.reply({ content: `🔁 Chế độ lặp: **${loopNames[queue.loop]}**`, ephemeral: true });
                 break;

@@ -15,7 +15,7 @@ export default {
         }
 
         queue.autoplay = !queue.autoplay;
-        queue.saveSettings();
+        await queue.saveSettings();
         await interaction.reply(`📻 Đã **${queue.autoplay ? 'Bật' : 'Tắt'}** chế độ tự động phát.`);
     },
 };

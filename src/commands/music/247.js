@@ -15,7 +15,7 @@ export default {
         }
 
         queue.mode247 = !queue.mode247;
-        queue.saveSettings();
+        await queue.saveSettings();
         await interaction.reply(`♾️ Đã **${queue.mode247 ? 'Bật' : 'Tắt'}** chế độ 24/7.`);
     },
 };
