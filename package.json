@@ -1,0 +1,36 @@
+{
+    "name": "kuubii-music-discord-bot",
+    "version": "1.0.0",
+    "description": "A high-quality Discord Music Bot inspired by Beatra.app",
+    "main": "src/index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "nodemon src/index.js"
+    },
+    "keywords": [
+        "discord",
+        "music",
+        "bot",
+        "discord.js",
+        "voice",
+        "audio"
+    ],
+    "author": "Antigravity",
+    "license": "MIT",
+    "dependencies": {
+        "discord.js": "^14.16.3",
+        "@discordjs/voice": "^0.17.0",
+        "@discordjs/opus": "^0.9.0",
+        "libsodium-wrappers": "^0.7.15",
+        "play-dl": "^1.9.7",
+        "better-sqlite3": "^11.5.0",
+        "dotenv": "^16.4.5",
+        "genius-lyrics": "^4.4.7",
+        "winston": "^3.15.0",
+        "ffmpeg-static": "^5.2.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.7"
+    }
+}
